@@ -19,6 +19,10 @@ datasets/**/*.json
 snapshots/
 *.pkl
 
+# Generated evolution logs/artifacts and local backups
+output/
+*.bak
+
 # IDE
 .idea/
 .vscode/

@@ -118,7 +118,7 @@ def evolve(
     # ── 3. Validate constraints on baseline ─────────────────────────────
     console.print(f"\n[bold]Validating baseline constraints[/bold]")
     validator = ConstraintValidator(config)
-    baseline_constraints = validator.validate_all(skill["body"], "skill")
+    baseline_constraints = validator.validate_all(skill["raw"], "skill")
     all_pass = True
     for c in baseline_constraints:
         icon = "✓" if c.passed else "✗"
@@ -152,10 +152,16 @@ def evolve(
 
     start_time = time.time()
 
+    def gepa_metric(gold, pred, trace=None, pred_name=None, pred_trace=None) -> float:
+        """GEPA-compatible wrapper: dspy calls metric with 3 or 5 args across versions."""
+        return skill_fitness_metric(gold, pred, trace)
+
+
     try:
         optimizer = dspy.GEPA(
-            metric=skill_fitness_metric,
-            max_steps=iterations,
+            metric=gepa_metric,
+            reflection_lm=lm,  # GEPA>=3.3 requires explicit reflection LM
+            max_full_evals=iterations,  # honor --iterations: bound the GEPA budget
         )
 
         optimized_module = optimizer.compile(
@@ -185,7 +191,7 @@ def evolve(
 
     # ── 7. Validate evolved skill ───────────────────────────────────────
     console.print(f"\n[bold]Validating evolved skill[/bold]")
-    evolved_constraints = validator.validate_all(evolved_body, "skill", baseline_text=skill["body"])
+    evolved_constraints = validator.validate_all(evolved_full, "skill", baseline_text=skill["raw"])
     all_pass = True
     for c in evolved_constraints:
         icon = "✓" if c.passed else "✗"
